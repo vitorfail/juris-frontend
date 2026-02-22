@@ -12,11 +12,13 @@ import { usePathname } from "next/navigation"
 type NavigationContextType = {
   isNavigating: boolean
   startNavigation: () => void
+  stoptNavigation: () => void
 }
 
 const NavigationContext = createContext<NavigationContextType>({
   isNavigating: false,
   startNavigation: () => {},
+  stoptNavigation: () => {}
 })
 
 export function useNavigation() {
@@ -29,24 +31,25 @@ export function NavigationProvider({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-  const [isNavigating, setIsNavigating] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(true)
   const [currentPath, setCurrentPath] = useState(pathname)
 
   const startNavigation = useCallback(() => {
     setIsNavigating(true)
   }, [])
-
+  const stoptNavigation = useCallback(() => {
+    setIsNavigating(false)
+  }, [])
   useEffect(() => {
     if (pathname !== currentPath) {
       setCurrentPath(pathname)
       // Small delay so the new page content renders before we hide the loader
-      const timer = setTimeout(() => setIsNavigating(false), 15)
-      return () => clearTimeout(timer)
     }
+    stoptNavigation();
   }, [pathname, currentPath])
 
   return (
-    <NavigationContext value={{ isNavigating, startNavigation }}>
+    <NavigationContext value={{ isNavigating, startNavigation,stoptNavigation }}>
       {children}
     </NavigationContext>
   )
