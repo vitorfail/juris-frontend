@@ -2,23 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { mockTasks, mockHearings, getUserName, getCaseNumber } from "@/lib/mock-data"
+import { useTasks, useHearings, useUsers, useCases } from "@/lib/hooks"
 import { CalendarDays, CheckCircle2, Clock, AlertTriangle } from "lucide-react"
 import { formatMonthShort, formatDay, formatTimeBR, formatDateBR } from "@/lib/format"
-
-const upcomingHearings = mockHearings
-  .sort(
-    (a, b) =>
-      new Date(a.hearing_date).getTime() - new Date(b.hearing_date).getTime()
-  )
-  .slice(0, 3)
-
-const recentTasks = mockTasks
-  .sort(
-    (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  )
-  .slice(0, 5)
 
 function taskStatusBadge(status: string) {
   switch (status) {
@@ -56,6 +42,33 @@ function taskStatusBadge(status: string) {
 }
 
 export function RecentActivity() {
+  const { data: tasks } = useTasks()
+  const { data: hearings } = useHearings()
+  const { data: users } = useUsers()
+  const { data: cases } = useCases()
+
+  const getUserName = (id: string) => {
+    return (users || []).find((u) => u.id === id)?.name || "Nao encontrado"
+  }
+
+  const getCaseNumber = (id: string) => {
+    return (cases || []).find((c) => c.id === id)?.case_number || "Sem numero"
+  }
+
+  const upcomingHearings = [...(hearings || [])]
+    .sort(
+      (a, b) =>
+        new Date(a.hearing_date).getTime() - new Date(b.hearing_date).getTime()
+    )
+    .slice(0, 3)
+
+  const recentTasks = [...(tasks || [])]
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
+    .slice(0, 5)
+
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       {/* Upcoming Hearings */}

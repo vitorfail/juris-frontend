@@ -141,3 +141,11 @@ export interface CaseWithRelations extends Case {
   financial_records: FinancialRecord[]
   notes: Note[]
 }
+
+export interface PaginatedResponse<T> {
+  items: T[]
+  total: number
+  page: number
+  size: number
+  pages: number
+}

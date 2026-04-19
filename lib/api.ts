@@ -5,6 +5,7 @@ import type {
   Hearing,
   FinancialRecord,
   User,
+  PaginatedResponse,
 } from "./types"
 import {
   mockClients,
@@ -27,13 +28,22 @@ export interface ApiConfig {
 }
 
 export function getApiConfig(): ApiConfig | null {
-  if (typeof window === "undefined") return null
+  const envUrl = process.env.NEXT_PUBLIC_API_URL
+  
+  if (typeof window === "undefined") {
+    return envUrl ? { baseUrl: envUrl, token: "" } : null
+  }
+
   try {
     const raw = localStorage.getItem(CONFIG_KEY)
-    if (!raw) return null
-    return JSON.parse(raw) as ApiConfig
+    const storedConfig = raw ? JSON.parse(raw) as ApiConfig : null
+    
+    return {
+      baseUrl: storedConfig?.baseUrl || envUrl || "",
+      token: storedConfig?.token || ""
+    }
   } catch {
-    return null
+    return envUrl ? { baseUrl: envUrl, token: "" } : null
   }
 }
 
@@ -47,7 +57,7 @@ export function clearApiConfig() {
 
 export function isApiConfigured(): boolean {
   const cfg = getApiConfig()
-  return !!cfg?.baseUrl
+  return !!cfg?.baseUrl || !!process.env.NEXT_PUBLIC_API_URL
 }
 
 // ---------------------------------------------------------------------------
@@ -102,8 +112,30 @@ async function withFallback<T>(
 // Clients
 // ---------------------------------------------------------------------------
 
-export async function fetchClients(): Promise<Client[]> {
-  return withFallback(() => apiFetch<Client[]>("/clients"), mockClients)
+export async function fetchClients(page = 1, size = 20, search?: string): Promise<PaginatedResponse<Client>> {
+  const query = new URLSearchParams({
+    page: page.toString(),
+    size: size.toString(),
+    ...(search ? { search } : {}),
+  })
+  
+  return withFallback(
+    () => apiFetch<PaginatedResponse<Client>>(`/clients/?${query.toString()}`),
+    {
+      items: mockClients.slice((page - 1) * size, page * size),
+      total: mockClients.length,
+      page,
+      size,
+      pages: Math.ceil(mockClients.length / size),
+    }
+  )
+}
+
+export async function fetchClientsSummary(): Promise<{ total: number; pj: number; pf: number }> {
+  return withFallback(
+    () => apiFetch<{ total: number; pj: number; pf: number }>("/clients/summary/counts"),
+    { total: mockClients.length, pj: mockClients.filter(c => c.type === "pj").length, pf: mockClients.filter(c => c.type === "pf").length }
+  )
 }
 
 export async function fetchClient(id: string): Promise<Client | undefined> {
@@ -153,6 +185,17 @@ export async function fetchCases(): Promise<Case[]> {
   return withFallback(() => apiFetch<Case[]>("/cases"), mockCases)
 }
 
+export async function fetchCasesSummary(): Promise<{ total_cases: number; active_cases: number; total_value: number }> {
+  return withFallback(
+    () => apiFetch<{ total_cases: number; active_cases: number; total_value: number }>("/cases/summary/general"),
+    { 
+      total_cases: mockCases.length, 
+      active_cases: mockCases.filter(c => c.status === "ativo").length,
+      total_value: mockCases.reduce((acc, c) => acc + (c.value || 0), 0) 
+    }
+  )
+}
+
 export async function fetchCase(id: string): Promise<Case | undefined> {
   return withFallback(
     () => apiFetch<Case>(`/cases/${id}`),
@@ -198,6 +241,13 @@ export async function deleteCase(id: string): Promise<void> {
 
 export async function fetchTasks(): Promise<Task[]> {
   return withFallback(() => apiFetch<Task[]>("/tasks"), mockTasks)
+}
+
+export async function fetchTasksSummary(): Promise<Record<string, number>> {
+  return withFallback(
+    () => apiFetch<Record<string, number>>("/tasks/summary/status"),
+    { pending: mockTasks.filter(t => t.status === "pending").length, done: mockTasks.filter(t => t.status === "done").length }
+  )
 }
 
 export async function createTask(
@@ -283,6 +333,51 @@ export async function createFinancialRecord(
 
 export async function fetchUsers(): Promise<User[]> {
   return withFallback(() => apiFetch<User[]>("/users"), mockUsers)
+}
+
+// ---------------------------------------------------------------------------
+// Auth
+// ---------------------------------------------------------------------------
+
+export async function login(email: string, password: string): Promise<any> {
+  const cfg = getApiConfig()
+  if (!cfg?.baseUrl) {
+    throw new Error("API base URL not configured")
+  }
+
+  const url = `${cfg.baseUrl.replace(/\/+$/, "")}/auth/login`
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password }),
+  })
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}))
+    throw new Error(errorData.detail || "Falha na autenticacao")
+  }
+
+  const data = await res.json()
+  
+  // Save token to config
+  setApiConfig({
+    baseUrl: cfg.baseUrl,
+    token: data.access_token
+  })
+
+  return data
+}
+
+export function logout() {
+  const cfg = getApiConfig()
+  if (cfg) {
+    setApiConfig({
+      baseUrl: cfg.baseUrl,
+      token: ""
+    })
+  }
 }
 
 // ---------------------------------------------------------------------------

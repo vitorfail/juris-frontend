@@ -3,29 +3,47 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { mockHearings, getCaseNumber } from "@/lib/mock-data"
+import { useHearings, useCases } from "@/lib/hooks"
 import { Plus, MapPin, Clock, FileText } from "lucide-react"
-
-const sortedHearings = [...mockHearings].sort(
-  (a, b) => new Date(a.hearing_date).getTime() - new Date(b.hearing_date).getTime()
-)
 
 function getMonthGroup(dateStr: string) {
   const date = new Date(dateStr)
   return date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
 }
 
-const grouped = sortedHearings.reduce(
-  (acc, h) => {
-    const key = getMonthGroup(h.hearing_date)
-    if (!acc[key]) acc[key] = []
-    acc[key].push(h)
-    return acc
-  },
-  {} as Record<string, typeof sortedHearings>
-)
-
 export function HearingsList() {
+  const { data: hearings, isLoading } = useHearings()
+  const { data: cases } = useCases()
+
+  const getCaseNumber = (id: string) => {
+    return (cases || []).find((c) => c.id === id)?.case_number || "Sem numero"
+  }
+
+  const sortedHearings = [...(hearings || [])].sort(
+    (a, b) => new Date(a.hearing_date).getTime() - new Date(b.hearing_date).getTime()
+  )
+
+  const grouped = sortedHearings.reduce(
+    (acc, h) => {
+      const key = getMonthGroup(h.hearing_date)
+      if (!acc[key]) acc[key] = []
+      acc[key].push(h)
+      return acc
+    },
+    {} as Record<string, typeof sortedHearings>
+  )
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center rounded-xl border bg-card shadow-sm">
+        <div className="flex flex-col items-center gap-2">
+          <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <span className="text-xs text-muted-foreground">Carregando audiencias...</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -37,13 +55,13 @@ export function HearingsList() {
       </div>
 
       <div className="flex flex-col gap-6">
-        {Object.entries(grouped).map(([month, hearings]) => (
+        {Object.entries(grouped).map(([month, monthHearings]) => (
           <div key={month} className="flex flex-col gap-3">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {month}
             </h3>
             <div className="flex flex-col gap-2">
-              {hearings.map((hearing) => {
+              {monthHearings.map((hearing) => {
                 const date = new Date(hearing.hearing_date)
                 return (
                   <Card key={hearing.id} className="border-none shadow-sm">

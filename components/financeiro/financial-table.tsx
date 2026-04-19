@@ -19,20 +19,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { mockFinancialRecords, getCaseNumber } from "@/lib/mock-data"
+import { useFinancialRecords, useCases } from "@/lib/hooks"
 import { Search, Plus, Filter } from "lucide-react"
 
 export function FinancialTable() {
   const [search, setSearch] = useState("")
   const [typeFilter, setTypeFilter] = useState("all")
+  const { data: records, isLoading } = useFinancialRecords()
+  const { data: cases } = useCases()
 
-  const filtered = mockFinancialRecords.filter((f) => {
+  const getCaseNumber = (id: string) => {
+    return (cases || []).find((c) => c.id === id)?.case_number || "Sem numero"
+  }
+
+  const filtered = (records || []).filter((f) => {
     const matchesSearch =
       f.description?.toLowerCase().includes(search.toLowerCase()) ||
       getCaseNumber(f.case_id).toLowerCase().includes(search.toLowerCase())
     const matchesType = typeFilter === "all" || f.type === typeFilter
     return matchesSearch && matchesType
   })
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center rounded-xl border bg-card shadow-sm">
+        <div className="flex flex-col items-center gap-2">
+          <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <span className="text-xs text-muted-foreground">Carregando financeiro...</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -50,7 +67,7 @@ export function FinancialTable() {
           <div className="flex items-center gap-1.5">
             <Filter className="size-3.5 text-muted-foreground" />
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="h-9 w-36 text-xs">
+              <SelectTrigger className="h-9 w-32 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

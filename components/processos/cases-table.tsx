@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { mockCases, getClientName, getUserName } from "@/lib/mock-data"
+import { useCases, useClients, useUsers } from "@/lib/hooks"
 import {
   Search,
   Plus,
@@ -76,8 +76,19 @@ export function CasesTable() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [dialogOpen, setDialogOpen] = useState(false)
+  const { data: cases, isLoading } = useCases()
+  const { data: clients } = useClients()
+  const { data: users } = useUsers()
 
-  const filtered = mockCases.filter((c) => {
+  const getClientName = (id: string) => {
+    return (clients || []).find((c) => c.id === id)?.name || "Nao encontrado"
+  }
+
+  const getUserName = (id: string) => {
+    return (users || []).find((u) => u.id === id)?.name || "Nao atribuido"
+  }
+
+  const filtered = (cases || []).filter((c) => {
     const matchesSearch =
       c.case_number?.toLowerCase().includes(search.toLowerCase()) ||
       c.description?.toLowerCase().includes(search.toLowerCase()) ||
@@ -85,6 +96,17 @@ export function CasesTable() {
     const matchesStatus = statusFilter === "all" || c.status === statusFilter
     return matchesSearch && matchesStatus
   })
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center rounded-xl border bg-card shadow-sm">
+        <div className="flex flex-col items-center gap-2">
+          <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <span className="text-xs text-muted-foreground">Carregando processos...</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-4">

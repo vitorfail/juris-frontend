@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { mockClients, mockUsers } from "@/lib/mock-data"
+import { useClients, useUsers } from "@/lib/hooks"
 
 interface CaseFormDialogProps {
   open: boolean
@@ -26,7 +26,10 @@ interface CaseFormDialogProps {
 }
 
 export function CaseFormDialog({ open, onOpenChange }: CaseFormDialogProps) {
-  const lawyers = mockUsers.filter((u) => u.role === "lawyer" || u.role === "admin")
+  const { data: clients } = useClients()
+  const { data: users } = useUsers()
+  
+  const lawyers = (users || []).filter((u) => u.role === "lawyer" || u.role === "admin")
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -47,7 +50,7 @@ export function CaseFormDialog({ open, onOpenChange }: CaseFormDialogProps) {
                   <SelectValue placeholder="Selecione o cliente" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockClients.map((c) => (
+                  {(clients || []).map((c) => (
                     <SelectItem key={c.id} value={c.id} className="text-xs">
                       {c.name}
                     </SelectItem>

@@ -2,44 +2,49 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Users, Briefcase, CheckSquare, DollarSign, TrendingUp, TrendingDown } from "lucide-react"
-import { mockClients, mockCases, mockTasks, mockFinancialRecords } from "@/lib/mock-data"
-
-const stats = [
-  {
-    title: "Clientes Ativos",
-    value: mockClients.length,
-    change: "+12%",
-    trend: "up" as const,
-    icon: Users,
-    color: "bg-primary/10 text-primary",
-  },
-  {
-    title: "Processos Ativos",
-    value: mockCases.filter((c) => c.status === "ativo").length,
-    change: "+8%",
-    trend: "up" as const,
-    icon: Briefcase,
-    color: "bg-chart-2/10 text-chart-2",
-  },
-  {
-    title: "Tarefas Pendentes",
-    value: mockTasks.filter((t) => t.status === "pending").length,
-    change: "-3%",
-    trend: "down" as const,
-    icon: CheckSquare,
-    color: "bg-warning/10 text-warning",
-  },
-  {
-    title: "Receita Total",
-    value: `R$ ${(mockFinancialRecords.filter((f) => f.paid_at).reduce((acc, f) => acc + f.amount, 0) / 1000).toFixed(0)}k`,
-    change: "+22%",
-    trend: "up" as const,
-    icon: DollarSign,
-    color: "bg-success/10 text-success",
-  },
-]
+import { useClientsSummary, useCasesSummary, useTasksSummary, useFinancialRecords } from "@/lib/hooks"
 
 export function StatsCards() {
+  const { data: clientsSummary } = useClientsSummary()
+  const { data: casesSummary } = useCasesSummary()
+  const { data: tasksSummary } = useTasksSummary()
+  const { data: financial } = useFinancialRecords()
+
+  const stats = [
+    {
+      title: "Clientes Ativos",
+      value: clientsSummary?.total ?? 0,
+      change: "+12%",
+      trend: "up" as const,
+      icon: Users,
+      color: "bg-primary/10 text-primary",
+    },
+    {
+      title: "Processos Ativos",
+      value: casesSummary?.active_cases ?? 0,
+      change: "+8%",
+      trend: "up" as const,
+      icon: Briefcase,
+      color: "bg-chart-2/10 text-chart-2",
+    },
+    {
+      title: "Tarefas Pendentes",
+      value: tasksSummary?.pending ?? 0,
+      change: "-3%",
+      trend: "down" as const,
+      icon: CheckSquare,
+      color: "bg-warning/10 text-warning",
+    },
+    {
+      title: "Receita Total",
+      value: `R$ ${((financial || []).filter((f) => f.paid_at).reduce((acc, f) => acc + f.amount, 0) / 1000).toFixed(0)}k`,
+      change: "+22%",
+      trend: "up" as const,
+      icon: DollarSign,
+      color: "bg-success/10 text-success",
+    },
+  ]
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat) => (

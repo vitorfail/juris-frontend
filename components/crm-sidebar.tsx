@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { useCallback } from "react"
 import {
   LayoutDashboard,
@@ -15,6 +15,7 @@ import {
   LogOut,
 } from "lucide-react"
 import { useNavigation } from "@/components/navigation-context"
+import { logout } from "@/lib/api"
 import {
   Sidebar,
   SidebarContent,
@@ -73,6 +74,7 @@ const systemNav = [
 
 export function CrmSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { startNavigation } = useNavigation()
 
   const handleNavClick = useCallback(
@@ -187,6 +189,10 @@ export function CrmSidebar() {
             <SidebarMenuButton
               tooltip="Sair"
               className="text-sidebar-foreground/60 hover:text-sidebar-foreground"
+              onClick={() => {
+                logout()
+                router.push("/login")
+              }}
             >
               <LogOut />
               <span>Sair</span>

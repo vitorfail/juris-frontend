@@ -8,18 +8,7 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts"
-import { mockCases } from "@/lib/mock-data"
-
-const areaCount = mockCases.reduce(
-  (acc, c) => {
-    const area = c.area || "Outros"
-    acc[area] = (acc[area] || 0) + 1
-    return acc
-  },
-  {} as Record<string, number>
-)
-
-const data = Object.entries(areaCount).map(([name, value]) => ({ name, value }))
+import { useCases } from "@/lib/hooks"
 
 const COLORS = [
   "var(--color-primary)",
@@ -30,6 +19,19 @@ const COLORS = [
 ]
 
 export function AreaDistributionChart() {
+  const { data: cases } = useCases()
+
+  const areaCount = (cases || []).reduce(
+    (acc, c) => {
+      const area = c.area || "Outros"
+      acc[area] = (acc[area] || 0) + 1
+      return acc
+    },
+    {} as Record<string, number>
+  )
+
+  const data = Object.entries(areaCount).map(([name, value]) => ({ name, value }))
+
   return (
     <Card className="border-none shadow-sm">
       <CardHeader className="pb-2">

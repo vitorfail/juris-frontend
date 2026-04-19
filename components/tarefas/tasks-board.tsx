@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { mockTasks, getUserName, getCaseNumber } from "@/lib/mock-data"
+import { useTasks, useCases, useUsers } from "@/lib/hooks"
 import {
   Search,
   Plus,
@@ -24,7 +24,6 @@ import {
   Trash2,
 } from "lucide-react"
 import type { Task } from "@/lib/types"
-import { formatDateBR } from "@/lib/format"
 
 const columns = [
   {
@@ -50,7 +49,15 @@ const columns = [
   },
 ]
 
-function TaskCard({ task }: { task: Task }) {
+function TaskCard({ 
+  task, 
+  getCaseNumber, 
+  getUserName 
+}: { 
+  task: Task, 
+  getCaseNumber: (id: string) => string, 
+  getUserName: (id: string) => string 
+}) {
   return (
     <div className="group rounded-lg border bg-card p-3 shadow-sm transition-shadow hover:shadow-md">
       <div className="flex items-start justify-between">
@@ -107,12 +114,34 @@ function TaskCard({ task }: { task: Task }) {
 
 export function TasksBoard() {
   const [search, setSearch] = useState("")
+  const { data: tasks, isLoading } = useTasks()
+  const { data: cases } = useCases()
+  const { data: users } = useUsers()
 
-  const filtered = mockTasks.filter(
+  const getCaseNumber = (id: string) => {
+    return (cases || []).find((c) => c.id === id)?.case_number || "Sem numero"
+  }
+
+  const getUserName = (id: string) => {
+    return (users || []).find((u) => u.id === id)?.name || "Nao atribuido"
+  }
+
+  const filtered = (tasks || []).filter(
     (t) =>
       t.title.toLowerCase().includes(search.toLowerCase()) ||
       t.description?.toLowerCase().includes(search.toLowerCase())
   )
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center rounded-xl border bg-card shadow-sm">
+        <div className="flex flex-col items-center gap-2">
+          <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <span className="text-xs text-muted-foreground">Carregando tarefas...</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -134,7 +163,7 @@ export function TasksBoard() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         {columns.map((col) => {
-          const tasks = filtered.filter((t) => t.status === col.id)
+          const colTasks = filtered.filter((t) => t.status === col.id)
           return (
             <Card key={col.id} className="border-none shadow-sm">
               <CardHeader className="pb-3">
@@ -146,19 +175,26 @@ export function TasksBoard() {
                     <span className="text-sm font-semibold text-foreground">{col.title}</span>
                   </div>
                   <Badge variant="secondary" className="text-[10px] border-none">
-                    {tasks.length}
+                    {colTasks.length}
                   </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-2">
-                {tasks.length === 0 ? (
+                {colTasks.length === 0 ? (
                   <div className="rounded-lg border border-dashed p-6 text-center">
                     <p className="text-xs text-muted-foreground">
                       Nenhuma tarefa
                     </p>
                   </div>
                 ) : (
-                  tasks.map((task) => <TaskCard key={task.id} task={task} />)
+                  colTasks.map((task) => (
+                    <TaskCard 
+                      key={task.id} 
+                      task={task} 
+                      getCaseNumber={getCaseNumber}
+                      getUserName={getUserName}
+                    />
+                  ))
                 )}
               </CardContent>
             </Card>

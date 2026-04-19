@@ -6,11 +6,23 @@ import {
   fetchHearings,
   fetchFinancialRecords,
   fetchUsers,
+  fetchClientsSummary,
+  fetchCasesSummary,
+  fetchTasksSummary,
 } from "./api"
 
-export function useClients() {
-  return useSWR("clients", fetchClients, {
-    fallbackData: [],
+export function useClients(page = 1, size = 20, search?: string) {
+  return useSWR(
+    ["clients", page, size, search],
+    () => fetchClients(page, size, search),
+    {
+      revalidateOnFocus: false,
+    }
+  )
+}
+
+export function useClientsSummary() {
+  return useSWR("clients-summary", fetchClientsSummary, {
     revalidateOnFocus: false,
   })
 }
@@ -22,9 +34,21 @@ export function useCases() {
   })
 }
 
+export function useCasesSummary() {
+  return useSWR("cases-summary", fetchCasesSummary, {
+    revalidateOnFocus: false,
+  })
+}
+
 export function useTasks() {
   return useSWR("tasks", fetchTasks, {
     fallbackData: [],
+    revalidateOnFocus: false,
+  })
+}
+
+export function useTasksSummary() {
+  return useSWR("tasks-summary", fetchTasksSummary, {
     revalidateOnFocus: false,
   })
 }
