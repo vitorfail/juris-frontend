@@ -3,12 +3,24 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Users, Briefcase, CheckSquare, DollarSign, TrendingUp, TrendingDown } from "lucide-react"
 import { useClientsSummary, useCasesSummary, useTasksSummary, useFinancialRecords } from "@/lib/hooks"
+import { useNavigation } from "@/components/navigation-context"
+import { useEffect } from "react"
 
 export function StatsCards() {
-  const { data: clientsSummary } = useClientsSummary()
-  const { data: casesSummary } = useCasesSummary()
-  const { data: tasksSummary } = useTasksSummary()
-  const { data: financial } = useFinancialRecords()
+  const { data: clientsSummary, isLoading: l1 } = useClientsSummary()
+  const { data: casesSummary, isLoading: l2 } = useCasesSummary()
+  const { data: tasksSummary, isLoading: l3 } = useTasksSummary()
+  const { data: financial, isLoading: l4 } = useFinancialRecords()
+
+  const { startNavigation, stoptNavigation } = useNavigation()
+  const isLoading = l1 || l2 || l3 || l4
+
+  useEffect(() => {
+    if (isLoading) {
+      startNavigation()
+      return () => stoptNavigation()
+    }
+  }, [isLoading, startNavigation, stoptNavigation])
 
   const stats = [
     {

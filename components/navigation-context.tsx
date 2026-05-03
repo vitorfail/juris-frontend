@@ -31,25 +31,40 @@ export function NavigationProvider({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-  const [isNavigating, setIsNavigating] = useState(true)
+  const [navCount, setNavCount] = useState(0)
   const [currentPath, setCurrentPath] = useState(pathname)
 
+  const isNavigating = navCount > 0
+
   const startNavigation = useCallback(() => {
-    setIsNavigating(true)
+    setNavCount((prev) => prev + 1)
   }, [])
+
   const stoptNavigation = useCallback(() => {
-    setIsNavigating(false)
+    setNavCount((prev) => Math.max(0, prev - 1))
   }, [])
+
   useEffect(() => {
     if (pathname !== currentPath) {
       setCurrentPath(pathname)
-      // Small delay so the new page content renders before we hide the loader
+      startNavigation()
+      let fired = false
+      const timer = setTimeout(() => {
+        fired = true
+        stoptNavigation()
+      }, 500) // Fallback for pages without API requests
+      
+      return () => {
+        clearTimeout(timer)
+        if (!fired) {
+          stoptNavigation()
+        }
+      }
     }
-    stoptNavigation();
-  }, [pathname, currentPath])
+  }, [pathname, currentPath, startNavigation, stoptNavigation])
 
   return (
-    <NavigationContext value={{ isNavigating, startNavigation,stoptNavigation }}>
+    <NavigationContext value={{ isNavigating, startNavigation, stoptNavigation }}>
       {children}
     </NavigationContext>
   )

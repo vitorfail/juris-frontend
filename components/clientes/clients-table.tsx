@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useNavigation } from "@/components/navigation-context"
+import { useEffect, useState } from "react"
 import {
   Table,
   TableBody,
@@ -40,8 +41,18 @@ export function ClientsTable() {
   const [size, setSize] = useState(10)
   const [dialogOpen, setDialogOpen] = useState(false)
   
-  const { data: pagination, isLoading } = useClients(page, size, debouncedSearch)
-  const { data: cases } = useCases()
+  const { data: pagination, isLoading: l1 } = useClients(page, size, debouncedSearch)
+  const { data: cases, isLoading: l2 } = useCases()
+
+  const { startNavigation, stoptNavigation } = useNavigation()
+  const isDataLoading = l1 || l2
+
+  useEffect(() => {
+    if (isDataLoading) {
+      startNavigation()
+      return () => stoptNavigation()
+    }
+  }, [isDataLoading, startNavigation, stoptNavigation])
 
   const clients = pagination?.items || []
   const total = pagination?.total || 0
@@ -61,7 +72,7 @@ export function ClientsTable() {
       .toUpperCase()
   }
 
-  if (isLoading && !pagination) {
+  if (isDataLoading && !pagination) {
     return (
       <div className="flex h-64 items-center justify-center rounded-xl border bg-card shadow-sm">
         <div className="flex flex-col items-center gap-2">

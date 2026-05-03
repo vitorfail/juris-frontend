@@ -39,7 +39,7 @@ export function getApiConfig(): ApiConfig | null {
     const storedConfig = raw ? JSON.parse(raw) as ApiConfig : null
     
     return {
-      baseUrl: storedConfig?.baseUrl || envUrl || "",
+      baseUrl: envUrl || storedConfig?.baseUrl || "",
       token: storedConfig?.token || ""
     }
   } catch {
@@ -83,6 +83,10 @@ async function apiFetch<T>(
   const res = await fetch(url, { ...options, headers })
 
   if (!res.ok) {
+    if (res.status === 401 && typeof window !== "undefined") {
+      clearApiConfig()
+      window.location.href = "/login"
+    }
     const body = await res.text().catch(() => "")
     throw new Error(`Erro ${res.status}: ${body || res.statusText}`)
   }

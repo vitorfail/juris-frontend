@@ -79,13 +79,9 @@ export function CrmSidebar() {
 
   const handleNavClick = useCallback(
     (href: string) => {
-      const isActive =
-        href === "/" ? pathname === "/" : pathname.startsWith(href)
-      if (!isActive) {
-        startNavigation()
-      }
+      // Navigation is handled automatically by Next.js and the loader is triggered by the pathname change.
     },
-    [pathname, startNavigation]
+    []
   )
 
   return (
